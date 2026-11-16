@@ -1947,8 +1947,15 @@ function stories(t, now, ev) {
 function deliver(t, now, ev) {
   for (const o of [...t.orders]) {
     if (o.arrivesAt > now) continue;
-    t.orders.splice(t.orders.indexOf(o), 1); const d = SPECIES_DEF[o.species], made = [];
-    for (let i = 0; i < d.count; i++) made.push(makeFish(t, o, now, i));
+    // all or nothing: the animals are made first, and the order goes only once they are in the tank. One that cannot be made (a bad
+    // record, a bug) stays on order and is tried again; after three tries its shells come back, so nothing paid for can vanish.
+    const d = SPECIES_DEF[o.species], made = [], n0 = t.fish.length, seq0 = t.seq;
+    try { for (let i = 0; i < d.count; i++) made.push(makeFish(t, o, now, i)); }
+    catch (e) { t.fish.length = n0; t.seq = seq0; o.fails = (o.fails ?? 0) + 1; (t.flags.orderErr ||= []).push({ id: o.id, species: o.species, at: now, err: String(e?.message ?? e).slice(0, 120) }); t.flags.orderErr = t.flags.orderErr.slice(-5);
+      if (typeof console !== 'undefined') console.error('order could not arrive:', o.species, o.id, e?.message ?? e);
+      if (o.fails >= 3) { t.orders.splice(t.orders.indexOf(o), 1); const back = Math.max(0, Math.round(o.paid ?? d.price)); t.shells += back; ev.push({ journal: `${o.name || d.label} could not arrive. The ${back} shells ${o.by ?? 'you'} paid are back in the tank.`, toast: `${o.name || d.label} could not arrive: ${back} shells refunded.` }); }
+      continue; }
+    t.orders.splice(t.orders.indexOf(o), 1);
     if (o.carry && made[0]) { const C = o.carry, f = made[0]; Object.assign(f, { name: C.name ?? f.name, seed: C.seed ?? f.seed, sex: C.sex ?? f.sex, traits: C.traits ?? f.traits, genes: C.genes ?? f.genes, gen: C.gen ?? 0, parents: C.parents ?? [], raisedAs: C.raisedAs ?? undefined, born: Math.min(now, C.born ?? now), from: { tank: C.fromTank, by: C.by } }); f.stage = stageOf(f, now); f.fedAt = now; f.ail = 0;
       const mo = morphOf(f); ev.push({ journal: `${f.name} has arrived from ${C.fromTank}, sent by ${C.by}: ${mo ? `a ${MORPHS[mo].label.toLowerCase()} ` : 'a '}${d.label.toLowerCase()} bred there.`, toast: `${f.name} arrived from ${C.fromTank}!`, arrival: [f.id], story: f.id, text: `Came from ${C.fromTank}, sent by ${C.by}.` }); if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); continue; }      // an animal sent from a friend's tank: the same animal, with its genes, its parents and how it was raised
     if (o.giftFrom) for (const f of made) f.gift = { id: o.id, from: o.giftFrom, fromId: o.giftFromId ?? null, note: o.giftNote ?? null, at: now, ...(o.surprise ? { wrapped: true } : {}) };

@@ -92,6 +92,8 @@ On iPhone they only work from the home-screen icon: in Safari tap Share, then Ad
 
 ## Usage tracking and the developer view
 
+**Giving shells back.** If something paid for never arrived, give the shells back to that tank: `curl -X POST 'https://<your server>/admin/refund?key=<ADMIN_KEY>&code=<TANK CODE>&shells=120&why=the octopus that never arrived'`. Only a POST with the admin key works, at most 1,000 shells at a time, and the tank's journal says so. (A purchase that fails to arrive three times now refunds itself.)
+
 The server records anonymous events (a random player id, a random tank id, an event name and a number; no names, no IP addresses, no message text): sessions (counting only time the game is visible), care actions, fish played with and inspected, decorations placed, shells earned and spent, daily wishes completed, discoveries, journal opened, friend interactions, fish deaths and level-ups. Set `ADMIN_KEY` on the server, then open `/admin?key=YOUR_KEY` (or `/admin/stats?key=YOUR_KEY` for JSON). It shows individual-player numbers (daily active players, session length, visits per day, retention on days 1, 7 and 30, what a session contains) separately from shared-tank numbers (active tanks, caretakers per tank, level distribution, deaths). Three people opening one tank count as three players and one tank. Without `ADMIN_KEY` the page does not exist.
 
 ## Known limits

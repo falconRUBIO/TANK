@@ -602,7 +602,14 @@ await t('analytics: sessions and actions are recorded without personal data, pla
   wy.send(JSON.stringify({ t: 'track', e: 'fish_inspected' })); wy.send(JSON.stringify({ t: 'track', e: 'not_allowed' })); wy.send(JSON.stringify({ t: 'track', e: 'journal_opened' })); await new Promise((r) => setTimeout(r, 200)); wx.close(); wy.close(); await new Promise((r) => setTimeout(r, 300));
   const types = S.db.prepare('SELECT type FROM events').all().map((r) => r.type); for (const e of ['session_started', 'session_ended', 'fish_fed', 'fish_inspected', 'journal_opened', 'shells_earned']) assert.ok(types.includes(e), 'missing ' + e); assert.ok(!types.includes('not_allowed'));
   const cols = S.db.prepare('PRAGMA table_info(events)').all().map((c) => c.name).join(); assert.equal(cols, 'id,ts,user_id,tank_id,type,n', 'no names, no ips');
-  process.env.ADMIN_KEY = 'secret-key-1'; const bad = await fetch(base + '/admin/stats?key=nope'); assert.equal(bad.status, 404); const none = await fetch(base + '/admin/stats'); assert.equal(none.status, 404);
+  process.env.ADMIN_KEY = 'secret-key-1';
+  { const code = S.db.prepare('SELECT code, id FROM tanks WHERE test=0 ORDER BY created_at DESC LIMIT 1').get(), before = getW(code.id).shells, post = (q) => fetch(base + '/admin/refund?' + q, { method: 'POST' });
+    assert.equal((await fetch(base + `/admin/refund?key=secret-key-1&code=${code.code}&shells=120`)).status, 404, 'a refund is never a GET');
+    assert.equal((await post(`key=nope&code=${code.code}&shells=120`)).status, 404, 'nor without the key');
+    assert.equal((await post(`key=secret-key-1&code=${code.code}&shells=5000`)).status, 400, 'nor over 1,000');
+    const r = await post(`key=secret-key-1&code=${code.code}&shells=120&why=the octopus that never arrived`); assert.equal(r.status, 200); assert.equal(getW(code.id).shells, before + 120);
+    assert.ok(S.db.prepare('SELECT text FROM journal WHERE tank_id=? ORDER BY id DESC LIMIT 1').get(code.id).text.includes('120 shells were given back to the tank: the octopus that never arrived')); }
+  const bad = await fetch(base + '/admin/stats?key=nope'); assert.equal(bad.status, 404); const none = await fetch(base + '/admin/stats'); assert.equal(none.status, 404);
   { const html = await (await fetch(base + '/admin?key=secret-key-1')).text(); assert.ok(html.includes('RECENT TANKS') && html.includes(S.db.prepare('SELECT code FROM tanks ORDER BY created_at DESC LIMIT 1').get().code), 'the developer page lists recent tanks with their codes'); }
   { await (await fetch(base + '/')).text(); const r = S.traffic.report(), d = r.days[0]; assert.ok(d.kinds['Tank updates'] > 0 && d.kinds['App files'] > 0 && d.live > 0 && d.wire >= d.live, 'bytes out are counted by kind: ' + JSON.stringify(d));
     assert.ok(r.sofar > 0 && r.allowance === 5 * 1024 ** 3); const html = await (await fetch(base + '/admin?key=secret-key-1')).text(); assert.match(html, /BANDWIDTH[\s\S]*Tank updates[\s\S]*Animal positions/, 'the developer page shows where the bandwidth goes');

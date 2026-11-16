@@ -174,6 +174,17 @@ ok('the test aquarium\'s Neglect step: one animal dies and stays in the tank, an
   const r = R.applyAction(t, { t: 'devSea', op: 'neglect' }, { now, test: true }); assert.equal(r.ok, true, JSON.stringify(r));
   assert.equal(t.floaters.length, 1); assert.equal(t.fish.length, 2); assert.ok(t.fish.some((f) => f.ail >= R.AIL_LAST), 'another is fading'); assert.ok(r.events.some((e) => e.last), 'with its last-chance warning');
 });
+ok('an order that cannot be made never vanishes: it stays on order and is tried again, and after three tries its shells come back', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 8; t.shells = 500; t.createdAt = -20 * D; t.simTs = 10 * D; t.flags.mortality = false;
+  assert.equal(R.applyAction(t, { t: 'buyFish', species: 'octopus', name: 'Zed', seed: 4 }, { uid: 'z', name: 'Zach', now: 10 * D }).ok, true); const paid = t.orders[0].paid, n0 = t.fish.length;
+  t.orders[0].seed = Symbol('bad');      // (a record the game cannot build an animal from)
+  const errs = console.error; console.error = () => {}; let ev = [];
+  try { ev.push(...R.advance(t, 10 * D + 5 * 3600e3)); assert.equal(t.orders.length, 1, 'still on order after a failed try'); assert.equal(t.fish.length, n0, 'nothing half-made is left in the tank');
+    ev.push(...R.advance(t, 10 * D + 5 * 3600e3 + 60e3), ...R.advance(t, 10 * D + 5 * 3600e3 + 120e3)); } finally { console.error = errs; }
+  assert.equal(t.orders.length, 0, 'given up after three tries'); assert.ok(t.shells >= 500 - 1, 'and the ' + paid + ' shells are back: ' + t.shells); assert.ok(ev.some((e) => new RegExp(`The ${paid} shells`).test(e.journal ?? '')), 'the refund is the price paid'); assert.ok(ev.some((e) => /could not arrive/.test(e.journal ?? '')), 'and the journal says so');
+  const u = R.newWorld(0); R.norm(u, 0); u.flags.tut = 5; u.level = 8; u.shells = 500; u.simTs = 10 * D; R.applyAction(u, { t: 'buyFish', species: 'octopus', name: 'Zed', seed: 4 }, { uid: 'z', name: 'Zach', now: 10 * D }); R.advance(u, 10 * D + 5 * 3600e3);
+  assert.ok(u.fish.some((f) => f.name === 'Zed'), 'an ordinary order still arrives');
+});
 ok('on its last day, anyone in the crew may feed an octopus or a seahorse, not only its caretaker', () => {
   const f = R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 1, born: 0, stage: 'adult', traits: [], owner: 'u1' });
   assert.equal(R.canFeedOwn(f, 'u2', true), false, 'normally only its caretaker'); f.ail = R.AIL_LAST; assert.equal(R.canFeedOwn(f, 'u2', true), true, 'fading: anyone');

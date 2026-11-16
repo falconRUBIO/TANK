@@ -252,6 +252,19 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       if (url.pathname === '/admin/stats') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify(st, null, 1)); }
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' }); const first = db.prepare('SELECT MIN(created_at) f FROM users').get().f; return res.end(dashboardHtml({ ...st, meta: { dataSince: first ? new Date(first).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'no players yet', db: dbPath, tanks: db.prepare('SELECT t.code, t.name, t.created_at c, (SELECT COUNT(*) FROM members m WHERE m.tank_id=t.id) n, (SELECT MAX(last_seen) FROM members m WHERE m.tank_id=t.id) seen FROM tanks t ORDER BY t.created_at DESC LIMIT 15').all(), stuck: R.timeStepErrors(), orders: db.prepare("SELECT COUNT(*) n FROM tanks WHERE world LIKE '%\"orders\":[{%'").get().n, offsite: offsiteInfo(), traffic: traffic.report(), push: push.enabled ? `on, ${db.prepare('SELECT COUNT(*) n FROM push_subs').get().n} phone(s) subscribed` : 'off' } }));
     }
+    // the developer's refund: shells back to a tank (by its code) for something paid for that never came. POST only, with the admin key,
+    // at most 1,000 at a time, and the tank's journal says so. Everyone with the tank open sees the new total.
+    if (url.pathname === '/admin/refund') {
+      const key = process.env.ADMIN_KEY ?? '', given = url.searchParams.get('key') ?? '';
+      if (req.method !== 'POST' || !key || given.length !== key.length || !timingSafeEqual(Buffer.from(given), Buffer.from(key))) { res.writeHead(404); return res.end('Not found'); }
+      const code = String(url.searchParams.get('code') ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12), n = Math.round(+url.searchParams.get('shells')), why = String(url.searchParams.get('why') ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 80);
+      const tk = code && db.prepare('SELECT id FROM tanks WHERE code=? AND test=0').get(code);
+      if (!tk || !(n >= 1 && n <= 1000)) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: false, reason: !tk ? 'NO_TANK' : 'BAD_AMOUNT' })); }
+      const now = Date.now(), { w } = L.loadWorld(db, tk.id); w.shells = (w.shells ?? 0) + n; L.saveWorld(db, tk.id, w);
+      L.addJournal(db, tk.id, `${n} shells were given back to the tank${why ? `: ${why}` : '.'}`, null, now);
+      pushState(tk.id, L.publicTank(w)); broadcast(tk.id, { t: 'event', toast: `${n} shells were given back to the tank.` });
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify({ ok: true, shells: w.shells }));
+    }
     if (url.pathname.startsWith('/api/')) return api(req, res, url);
     let rel; try { rel = decodeURIComponent(url.pathname); } catch { res.writeHead(400); return res.end('Bad request'); }      // a malformed address once threw out of the handler and took the server down
     if (/^\/join\/[A-Za-z0-9]{0,8}$/.test(rel) || rel === '/') rel = '/index.html';      // invitation links open the app
