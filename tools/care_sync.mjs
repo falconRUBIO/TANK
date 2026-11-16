@@ -16,7 +16,7 @@ const phone = async (u) => { const ctx = await br.newContext({ viewport: { width
 const A = await phone(a), B = await phone(b);
 const clear = (p) => p.evaluate(() => { document.getElementById('modal')?.classList.remove('on'); document.getElementById('coach')?.classList.remove('on'); });      // (dismiss, never confirm: a request's OK button does the care itself, which would clean the seeded tank before the check)
 const care = async (p) => { await clear(p); await p.evaluate(() => { window.__ui.open('tank'); window.__ui.open('care'); }); await p.waitForTimeout(400); };
-const read = (p) => p.evaluate(() => { const rows = (due) => [...document.querySelectorAll('#sheet .cgroup .crow')].filter((r) => r.classList.contains('due') === due).map((r) => r.querySelector('b')?.textContent ?? ''), up = [...document.querySelectorAll('#sheet .cgroup .crow')].find((r) => /Tank upkeep/.test(r.querySelector('b')?.textContent ?? ''));      // (Care since the UI audit: one group of rows, each .due or not; one Tank upkeep row that says what is due or "All clean")
+const read = (p) => p.evaluate(() => { const rows = (due) => [...document.querySelectorAll('#sheet .cgroup .crow')].filter((r) => r.classList.contains('due') === due).map((r) => r.querySelector('b')?.textContent ?? ''), up = [...document.querySelectorAll('#sheet .cgroup .crow')].find((r) => /Cleaning/.test(r.querySelector('b')?.textContent ?? ''));      // (Care since the UI audit: one group of rows, each .due or not; one Cleaning row that says what is due or "All clean")
   return { open: document.getElementById('sheet').classList.contains('on'), hero: document.querySelector('#sheet [data-csub="care"] .nc')?.textContent ?? '', due: rows(true), later: rows(false), upkeep: up?.querySelector('small')?.textContent ?? '', groups: [...document.querySelectorAll('#sheet .fcards .fcard b')].map((x) => x.textContent), notes: [...document.querySelectorAll('#sheet .fcards .fnote, #sheet .fnote')].map((x) => x.textContent).join(' | ') }; });
 const feedScreen = async (p) => { await p.evaluate(() => document.querySelector('#sheet .crow[data-act="feeddrawer"]')?.click()); await p.waitForTimeout(500); };      // (Feed opens its own screen, a card per animal)
 const back = async (p) => { await p.evaluate(() => document.querySelector('#sheet [data-act="feedclose"]')?.click()); await p.waitForTimeout(400); };
@@ -27,10 +27,10 @@ ck('each phone shows only the animals that phone feeds (Alex: Pip and the fish; 
 ck('and says who feeds the others', /Inky is fed by Blair/.test(ra.notes) && /Pip is fed by Alex/.test(rb.notes), { a: ra.notes, b: rb.notes });
 await back(A); await back(B);
 // Blair wipes the glass and changes the water while Alex has Care open
-ra = await read(A); ck("before Blair acts, Alex's Care shows the upkeep as due", ra.due.includes("Tank upkeep") && /glass|water/i.test(ra.upkeep), { due: ra.due, upkeep: ra.upkeep });      // (read back on the Care list itself, not on the Feed screen)
+ra = await read(A); ck("before Blair acts, Alex's Care shows the upkeep as due", ra.due.includes("Cleaning") && /glass|water/i.test(ra.upkeep), { due: ra.due, upkeep: ra.upkeep });      // (read back on the Care list itself, not on the Feed screen)
 await B.evaluate(() => window.__game.dispatch({ t: 'glass' })); await B.evaluate(() => window.__game.dispatch({ t: 'water' }));
-ra = await until(A, (v) => !v.due.includes('Tank upkeep') && /All clean/.test(v.upkeep));
-ck("Blair cleans the glass and changes the water: Alex's open Care updates by itself", ra.open && !ra.due.includes('Tank upkeep') && ra.later.includes('Tank upkeep') && /All clean/.test(ra.upkeep), ra);
+ra = await until(A, (v) => !v.due.includes('Cleaning') && /All clean/.test(v.upkeep));
+ck("Blair cleans the glass and changes the water: Alex's open Care updates by itself", ra.open && !ra.due.includes('Cleaning') && ra.later.includes('Cleaning') && /All clean/.test(ra.upkeep), ra);
 // Blair feeds the fish (shared): Alex's Feed row updates
 await B.evaluate(() => window.__game.dispatch({ t: 'feed', food: 'flakes', x: 0 }));
 ra = await until(A, (v) => !v.due.includes('Feed'));

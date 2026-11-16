@@ -1638,11 +1638,9 @@ nav [data-tab].on,nav [data-tab].on :is(svg,b,span,small){color:#0c4a50!importan
    Closed, the bar floats on the tank. Open, it stops being its own pill: the sheet runs down behind it and the bar is its footer, with a
    fine seam above it, so the page and where you are in the app read as one thing. */
 #app:has(#sheet.on) nav{overflow:visible!important;background:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:none!important}
-#app:has(#sheet.on) nav::before{background:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
-/* (the fade behind the tabs belongs to the sheet itself, so it is the same glass with no edge: a strip that stays at the bottom of the sheet as it scrolls) */
-#sheet{--foot:calc(env(safe-area-inset-bottom,0px) + 84px);bottom:0!important;-webkit-mask-image:none!important;mask-image:none!important;padding-bottom:var(--foot)!important}
-#sheet.on::after{content:"";display:block;position:sticky;bottom:calc(-1 * var(--foot));height:calc(var(--foot) + 44px);margin:calc(-1 * (var(--foot) + 44px)) -16px calc(-1 * var(--foot));pointer-events:none;z-index:6;
-  background:linear-gradient(180deg,rgba(15,68,88,0),rgba(15,68,88,.82) 30%,rgba(15,68,88,.96) 48%)}
+#app:has(#sheet.on) nav::before{inset:auto!important;left:-14px!important;right:-14px!important;top:-30px!important;bottom:calc(-1 * (env(safe-area-inset-bottom,0px) + 10px))!important;border-radius:0!important;z-index:-1!important;
+  background:linear-gradient(180deg,rgba(16,70,88,0),rgba(16,70,88,.9) 32%,rgba(14,64,82,.97) 60%)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;-webkit-mask-image:none!important;mask-image:none!important;box-shadow:none!important}
+#sheet{--foot:calc(env(safe-area-inset-bottom,0px) + 84px);bottom:0!important;-webkit-mask-image:none!important;mask-image:none!important;padding-bottom:calc(var(--foot) + 30px)!important}
 #app:has(#sheet.on) nav::after{content:none!important}
 #app:has(#sheet.on) nav .lens{background:rgba(255,255,255,.16)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(255,255,255,.1)!important}
 #app:has(#sheet.on) nav [data-tab].on,#app:has(#sheet.on) nav [data-tab].on :is(svg,b,span,small){color:var(--aqua)!important}
@@ -1675,6 +1673,36 @@ nav [data-tab].on,nav [data-tab].on :is(svg,b,span,small){color:#0c4a50!importan
 #sheet .fcards{display:flex;flex-direction:column;gap:8px}#sheet .fcard{margin:0!important}#sheet .feedall{margin:0 0 8px!important;min-height:52px}
 #sheet .cats{margin:0 -16px 12px!important;padding:0 16px!important;gap:8px!important}#sheet .cat{height:36px;padding:0 14px!important;display:inline-flex;align-items:center}
 #sheet .crow .ct b{white-space:nowrap}#sheet .crow .vm{flex:0 1 66px;min-width:54px}
+/* ── the system, in one place ──
+   TILE: something you choose among, with a picture (an animal, a shop item, a toy, a game): a grid, the picture big, the name, one small line.
+   ROW: a job or a status: an icon bead, a title, at most one short line, and one control at the right (a button if it acts now, › if it opens).
+   BUTTON: only a verb that acts now. TEXT on its own: section labels and one-line empty states, nothing longer. */
+#sheet .seg.three{display:grid!important;grid-template-columns:repeat(3,1fr)}#sheet .seg.two{display:grid!important;grid-template-columns:1fr 1fr}
+#sheet .agrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#app #sheet .atile{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:10px 6px 10px;border-radius:var(--r-l);background:var(--pebble);box-shadow:var(--pebble-rim);text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .2s var(--spring)}
+#sheet .atile:active{transform:scale(.96)}
+#sheet .atile .apic{position:relative;width:64px;height:56px;display:grid;place-items:center;margin-bottom:2px}
+#app #sheet .atile .apic img{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;box-shadow:none!important;max-width:64px;max-height:56px;image-rendering:pixelated;filter:drop-shadow(0 3px 4px rgba(0,40,50,.35))}
+#app #sheet .atile .apic .hring{position:absolute;right:-12px;top:-8px;width:30px;height:30px}#app #sheet .atile .apic .hring b{font-size:10.5px}
+#sheet .atile b{font-size:13.5px;font-weight:700;color:var(--ink);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sheet .atile small{font-size:11.5px;color:var(--ink-3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sheet .atile.away{opacity:.6}#sheet .atile .atag{position:absolute;right:-6px;top:-4px;font:700 10px/1 -apple-system,system-ui,sans-serif;font-style:normal;padding:4px 6px;border-radius:999px;background:rgba(255,255,255,.3);color:#fff}
+#app #sheet .toybox{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;background:none!important;overflow:visible!important;border-radius:0!important}
+#app #sheet .toybox .toy{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start;gap:4px;text-align:center!important;padding:12px 6px!important;min-height:0;border-radius:var(--r-l)!important;border:0!important}
+#sheet .toybox .toy > span:first-child{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+#sheet .toybox .toy b{font-size:13px}#sheet .toybox .toy small{font-size:11px;color:var(--ink-3);line-height:1.25}#sheet .toybox .toy em{font-size:10.5px;font-style:normal;color:var(--aqua)}
+#sheet .toybox .toy.lock{opacity:.55}#sheet .toybox .toy .lvchip{margin-top:2px}
+/* rows: nothing but an icon bead, a title, a few words and one control */
+#sheet .crow .vm{display:none!important}
+#sheet .soon > div,#sheet .soon > .tap{min-height:48px}#sheet .soon > div > b,#sheet .soon > .tap > b{font-size:18px;color:var(--ink-3)!important;font-weight:400}
+#sheet .soon > div > span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* no title on a tab's page: the bar below already says where you are. The page starts with its own tabs (or its content);
+   a page inside a page keeps its back button and name (.fhead). */
+#app #sheet .crew > h3{display:none!important}
+#app #sheet .crew > .gear{top:0!important}#app #sheet .crew:has(> .gear) > .seg{margin-right:42px!important}
+#app #sheet .shop2 .shopbar.bare{display:none!important}#app #sheet .shop2 .shopbar{margin:0 0 10px!important}
+#app #sheet .cats .cat.mv{background:rgba(255,255,255,.08)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)!important}#app #sheet .cats .cat.mv.on{background:linear-gradient(180deg,#fff0c2,#ffd77e 45%,#f3b450)!important;color:#4a2e06!important}
+#sheet .crew > .seg:first-child,#sheet .crew > .gear + .seg,#sheet .crew > :first-child{margin-top:4px!important}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
