@@ -1710,6 +1710,9 @@ nav [data-tab].on,nav [data-tab].on :is(svg,b,span,small){color:#0c4a50!importan
 #sheet .fcard .ftop{display:flex;align-items:center;gap:12px}#sheet .fcard .ftop .fgo{all:unset;cursor:pointer;margin-left:auto}
 #sheet .fmore{margin:8px 0 0}#sheet .fmore > summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-2);min-height:40px;padding:0 4px}#sheet .fmore > summary::-webkit-details-marker{display:none}#sheet .fmore > summary::after{content:"›";transition:transform .2s}#sheet .fmore[open] > summary::after{transform:rotate(90deg)}
 #sheet .fmore .ftiles{margin-top:6px}
+/* the animal card: what matters now on the front; the rest under one More */
+#card .cmore{margin:14px 0 4px}#card .cmore > summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:52px;padding:0 16px;border-radius:var(--r-l);background:var(--pebble);box-shadow:var(--pebble-rim);font-size:15px;font-weight:700;color:var(--ink)}
+#card .cmore > summary::-webkit-details-marker{display:none}#card .cmore > summary::after{content:"›";font-size:20px;color:var(--ink-3);transition:transform .2s}#card .cmore[open] > summary::after{transform:rotate(90deg)}#card .cmore[open] > summary{margin-bottom:6px}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>

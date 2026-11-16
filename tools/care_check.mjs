@@ -19,7 +19,7 @@ const read = () => p.evaluate(() => ({ hero: document.querySelector('#sheet [dat
 await set({ fish: [{ id: 'o1', name: 'Inky', species: 'octopus', seed: 5, hunger: 0.7 }, { id: 's1', name: 'Pip', species: 'seahorse', seed: 4, hunger: 0.6, sex: 'm' }, { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }], h: 0.5, w: 0.6, g: 0.5 });
 await open(); let r = await read(); console.log('busy', JSON.stringify(r));
 ck('busy: the Care tab says how many things need you (feeding, the animals that need you, and the tank upkeep: one each, as the rows marked due)', r.hero === String(r.due.length), `${r.hero} for ${r.due.length} rows marked due`);
-ck('busy: Feed and Cleaning need you (Health too, when an animal is struggling); upkeep names both jobs and its button says 2 jobs', (() => { const d = r.due.filter((x) => !/^(Sea life h|Animal h|H)ealth/.test(x)); return d.length === 2 && /^Feed/.test(d[0]) && /^Cleaning \| Glass · water \| 2 jobs$/.test(d[1]); })(), r.due);
+ck('busy: Feed and Cleaning need you (Health too, when an animal is struggling); Cleaning names both jobs and its button says Clean all', (() => { const d = r.due.filter((x) => !/^(Sea life h|Animal h|H)ealth/.test(x)); return d.length === 2 && /^Feed/.test(d[0]) && /^Cleaning \| Glass · water \| Clean all$/.test(d[1]); })(), r.due);
 ck('busy: no repeated messages (old headline, "worth doing now", "could use a hand")', !r.carehead && r.dupes === 0, r);
 await p.screenshot({ path: `${OUT}/v_busy_top.png` });
 // tapping Feed opens the Feed screen: a card for each animal that can eat; choosing the crab drops it in for Inky, no tap on the water needed
@@ -29,8 +29,8 @@ await p.evaluate(() => document.querySelector('#sheet [data-feed="crab"]')?.clic
 ck('choosing the crab closes the menu and drops it straight in for Inky', !feeding.sheet && feeding.food === 'crab' && feeding.inky < 0.5, feeding);
 await p.evaluate(() => document.querySelector('#foodbar [data-done]')?.click());
 // Wipe opens the glass cleaning; Change starts the water change
-await open(); await p.evaluate(() => document.querySelector('#sheet .crow[data-act="upkeep"] .cbtn').click()); await p.waitForTimeout(500); await p.evaluate(() => document.querySelector('#modal.on [data-up="clean"]').click()); await p.waitForTimeout(600);
-const cleaning = await p.evaluate(() => ({ sheet: document.getElementById('sheet').classList.contains('on') })); ck('Wipe closes Care and starts cleaning', !cleaning.sheet, cleaning);
+await open(); await p.evaluate(() => document.querySelector('#sheet .crow[data-act^="cleanall"] .cbtn').click()); await p.waitForTimeout(2500);
+const cleaning = await p.evaluate(() => ({ sheet: document.getElementById('sheet').classList.contains('on'), glass: window.__game.state.glass })); ck('Clean all closes Care and does every job: the glass is clean at once, the water change plays out', !cleaning.sheet && cleaning.glass < 0.1, cleaning);
 await p.mouse.click(10, 10).catch(() => {}); await p.evaluate(() => { window.__ui.open('tank'); });
 // 2. all looked after
 await set({ fish: [{ id: 'o1', name: 'Inky', species: 'octopus', seed: 5, hunger: 0.02 }, { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }], h: 0.02, w: 0.95, g: 0.05 });

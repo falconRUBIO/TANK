@@ -1999,7 +1999,7 @@ function chapters(t, now, ev) {
 function milestones(t, now, ev) {
   chapters(t, now, ev);
   const n = t.seen.fish.length + t.seen.decor.length, due = Math.floor(n / 5);
-  while ((t.flags.collMs ?? 0) < due) { t.flags.collMs++; t.shells += 3; ev.push({ journal: `Your collection has ${t.flags.collMs * 5} species and decorations in it.`, toast: `Collection: ${t.flags.collMs * 5} found! +3 shells` }); }
+  while ((t.flags.collMs ?? 0) < due) { t.flags.collMs++; t.shells += 3; ev.push({ journal: `You have brought ${t.flags.collMs * 5} different kinds of sea life and decorations into the tank.`, toast: `${t.flags.collMs * 5} different kinds in your tank! +3 shells` });      /* (the collection book is gone: said as what it is, the same reward) */ }
   const w = WISHES[t.wishIdx]; if (w && w.done(t)) { t.wishIdx++; t.shells += w.reward; ev.push({ journal: `The tank's wish came true: ${w.text.toLowerCase()}.`, toast: `Tank wish complete! +${w.reward} shells`, wish: true }); }
 }
 
