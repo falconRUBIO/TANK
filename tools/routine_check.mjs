@@ -31,7 +31,7 @@ await step(10); L = await look(); ck('a minute on, everyone is up and their colo
 // mealtime
 const meal = await p.evaluate(async () => { const g = window.__game, s = g.state, F = window.__fishes; s.feedHrs = Array(24).fill(0); s.feedHrs[8] = 4; s.feedHrs[9] = 0.6; s.hunger = 0.45; s.lastFed = Date.now() - 6 * 3600e3; g.emit('state'); F.routine.slow = 0; F.routine.tick(0.25);
   const E = F.routine.expect; let up = 0, says = ''; for (const f of F.list) { if (f.dead || f.sk === 'platy') continue; f.retarget = 0; f.idle = 0; f.restK = 0; for (let i = 0; i < 6; i++) { f.pick(Math.random); if (f.target.y >= 9 && /nearly/.test(f.thought ?? '')) { up++; says = f.thought; break; } } }
-  window.__ui.open('care'); await new Promise((r) => setTimeout(r, 900)); const row = [...document.querySelectorAll('#sheet .crow, #sheet .mrow')].map((r) => r.textContent.replace(/\s+/g, ' ')).find((t) => /surface|could use food/.test(t)) ?? ''; window.__ui.open('tank');
+  window.__ui.open('care'); await new Promise((r) => setTimeout(r, 900)); const row = [...document.querySelectorAll('#sheet .crow, #sheet .mrow')].map((r) => r.textContent.replace(/\s+/g, ' ')).find((t) => /surface|could use food|hungry/.test(t)) ?? ''; window.__ui.open('tank');
   return { E, up, says, row }; });
 ck('fed around 8 most days: at 8 they expect breakfast', meal.E?.at >= 8 && meal.E?.at < 9.5, meal.E);
 ck('they gather up at the surface where the food falls', meal.up >= 3, meal);
