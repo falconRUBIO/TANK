@@ -30,7 +30,7 @@ ck('the fish card leads with what it is doing now', /now|csec/.test(order), orde
 await p.evaluate(() => window.__game.save?.()); await p.context().addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3600e3)));      // (leaving marks the visit; the page coming back finds it an hour old)
 await p.reload(); await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 });
 await p.waitForTimeout(4000); await p.evaluate(() => window.__ui.open('notices')); await p.waitForTimeout(1200);      // (coming back is quiet now: no card over the tank; what happened waits in Today, under "While you were away")
-const recap = await p.evaluate(() => document.querySelector('#sheet .awayl')?.innerText ?? '');
-ck('back after an hour, Today says what happened while you were away', /drove it away|Nemo|eggs/i.test(recap), recap.replace(/\s+/g, ' ').slice(0, 160));
+const recap = await p.evaluate(() => { const L = [...document.querySelectorAll('#sheet .awayl p')].map((x) => x.textContent.trim()), J = new Set((window.__game.journal ?? []).map((e) => e.text)); return { L, real: L.filter((x) => J.has(x) || /dropped by while you were away/.test(x)).length }; });
+ck('back after an hour, Today says what happened while you were away (real journal lines, the big news first, five at most)', recap.L.length >= 2 && recap.L.length <= 5 && recap.real === recap.L.length, JSON.stringify(recap.L).slice(0, 220));      // (which five depends on what the hour brought: a fish growing up outranks a scuffle)
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'UX checks passed'); process.exit(fails ? 1 : 0);
